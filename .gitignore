@@ -1,0 +1,31 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Rag App
+rag_app/__pycache__/
+rag_app/data/*
+!rag_app/data/.gitkeep
+rag_app/chroma_db/
+rag_app/.env
+
+# Angular
+saazai-ui/node_modules/
+saazai-ui/dist/
+saazai-ui/.angular/
+saazai-ui/src/environments/environment.ts
+saazai-ui/src/environments/environment.prod.ts
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
