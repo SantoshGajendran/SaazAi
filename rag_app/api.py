@@ -6,10 +6,25 @@ import shutil
 from typing import List
 
 # Import our existing backend logic
-from ingest import ingest_document, list_ingested_files, delete_ingested_file
+from ingest import ingest_document, list_ingested_files, delete_ingested_file, get_storage_stats
 from rag import get_chat_engine
 
 app = FastAPI(title="SaazAi API", description="Backend for SaazAi RAG Application")
+
+# In-memory progress tracker: { filename: "Status Message" }
+upload_progress = {}
+
+def update_progress(filename, message):
+    upload_progress[filename] = message
+
+def run_ingest_background(file_path, filename):
+    try:
+        update_progress(filename, "Starting...")
+        ingest_document(file_path, filename, callback=lambda msg: update_progress(filename, msg))
+    except Exception as e:
+        update_progress(filename, f"Error: {str(e)}")
+    # Note: "Completed" is set by ingest_document's last callback or could be done here.
+    # We rely on the callback for fine-grained steps.
 
 # CORS (Cross-Origin Resource Sharing) - Allow Angular frontend
 app.add_middleware(
@@ -45,11 +60,26 @@ def get_documents():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/stats")
+def get_stats():
+    """Get storage statistics"""
+    try:
+        return get_storage_stats()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/upload_status/{filename}")
+def get_upload_status(filename: str):
+    """Get current upload/ingestion status"""
+    status = upload_progress.get(filename, "Not Started")
+    return {"filename": filename, "status": status}
+
 @app.post("/upload")
-async def upload_document(file: UploadFile = File(...)):
-    """Upload and Ingest a PDF file"""
-    if not file.filename.endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+    """Upload and Ingest a file (PDF, PPTX, DOCX)"""
+    allowed_exts = (".pdf", ".pptx", ".docx", ".ppt", ".doc")
+    if not file.filename.lower().endswith(allowed_exts):
+        raise HTTPException(status_code=400, detail=f"Only PDF, PPTX, and DOCX files are allowed. Got: {file.filename}")
     
     try:
         # Define storage path
@@ -64,12 +94,10 @@ async def upload_document(file: UploadFile = File(...)):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
-        # Ingest in a separate thread to guarantee non-blocking response
-        import threading
-        thread = threading.Thread(target=ingest_document, args=(file_path, file.filename))
-        thread.start()
+        # Ingest in background with progress tracking
+        background_tasks.add_task(run_ingest_background, file_path, file.filename)
         
-        return {"message": f"Successfully processed {file.filename}", "filename": file.filename}
+        return {"message": f"Processing started for {file.filename}", "filename": file.filename}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -102,6 +130,11 @@ def render_page_to_base64(file_name, page_number):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         data_dir = os.path.join(base_dir, "data")
         file_path = os.path.join(data_dir, file_name)
+        
+        # PyMuPDF (fitz) only reliably renders PDFs/XPS/Images. 
+        # For Word/PPT, we skip rendering for now to avoid errors.
+        if not file_name.lower().endswith('.pdf'):
+            return None
         
         if not os.path.exists(file_path):
             return None

@@ -12,40 +12,48 @@ nest_asyncio.apply()
 
 from llama_index.core.vector_stores import MetadataFilters, ExactMatchFilter
 
+
+
+# Global Singletons
+_db_client = None
+_embed_model = None
+_llm = None
+
 def get_chat_engine(selected_file=None):
     """
-    Initializes and returns the Chat Engine with the custom system prompt.
-    If selected_file is provided, filters context to only that file.
+    Initializes and returns the Chat Engine.
+    Re-creates the Index wrapper on each call to ensure visibility of new uploads,
+    while caching heavy resources (LLM, Embeddings, DB Connection).
     """
-    
-    # 1. Load Persisted ChromaDB
+    global _db_client, _embed_model, _llm
+
     db_path = "./chroma_db"
     if not os.path.exists(db_path):
-        # Return None or raise error if DB doesn't exist yet (no files ingested)
-        # For this app, we'll return None and let the UI handle it
         return None
 
-    db = chromadb.PersistentClient(path=db_path)
-    chroma_collection = db.get_or_create_collection("rag_collection")
+    # 1. Initialize Heavy Resources Once
+    if _db_client is None:
+        print("Initializing Global ChromaDB Client...")
+        _db_client = chromadb.PersistentClient(path=db_path)
     
-    # Check if collection is empty
+    if _embed_model is None:
+        _embed_model = HuggingFaceEmbedding(model_name="all-MiniLM-L6-v2")
+        Settings.embed_model = _embed_model
+
+    if _llm is None:
+        # Using 127.0.0.1 to avoid localhost IPv6 resolution issues
+        _llm = Ollama(model="gpt-oss:120b-cloud", base_url="http://127.0.0.1:11434", request_timeout=300.0)
+        Settings.llm = _llm
+
+    # 2. Access Collection (Dynamic)
+    chroma_collection = _db_client.get_or_create_collection("rag_collection")
     if chroma_collection.count() == 0:
         return None
 
+    # 3. Create Index Wrapper (Lightweight)
+    # We re-create this to ensure it sees the latest state of the collection
     vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
-    
-    # 2. Setup Embeddings and LLM
-    embed_model = HuggingFaceEmbedding(model_name="all-MiniLM-L6-v2")
-    # Using 127.0.0.1 to avoid localhost IPv6 resolution issues on Windows
-    llm = Ollama(model="gpt-oss:120b-cloud", base_url="http://127.0.0.1:11434", request_timeout=300.0)
-
-    Settings.embed_model = embed_model
-    Settings.llm = llm
-
-    # 3. Load Index
-    index = VectorStoreIndex.from_vector_store(
-        vector_store,
-    )
+    index = VectorStoreIndex.from_vector_store(vector_store)
 
     # 4. Create Chat Engine with System Prompt AND Filters
     system_prompt = (
@@ -54,9 +62,10 @@ def get_chat_engine(selected_file=None):
         "2. Do not hallucinate values not present in the table. "
         "3. If asked for a diagram, image, or layout, DO NOT generate ASCII art or text-based representations. "
         "Instead, simply state 'Please refer to the Source Visual below.' and summarize the key technical details found in the text description."
+        "4. If the user input is a greeting (e.g., 'hi', 'hello', 'good morning') or a general pleasantry, ignore the strict context requirement and respond politely and naturally."
+        "5. IDENTITY: If asked about your name or what you do, state: 'My name is SazAi. I am an intelligent Technical Assistant designed to help you analyze, understand, and extract insights from your complex technical documents, schematics, and manuals.'"
     )
     
-    # Define Filters if selected_file is present
     filters = None
     if selected_file:
         filters = MetadataFilters(
@@ -66,7 +75,7 @@ def get_chat_engine(selected_file=None):
     chat_engine = index.as_chat_engine(
         chat_mode="context",
         system_prompt=system_prompt,
-        similarity_top_k=10,  # Increased to 10 to capture more relevant chunks (e.g. diagrams)
+        similarity_top_k=5, 
         filters=filters
     )
 
