@@ -77,7 +77,7 @@ def ingest_document(file_path, original_filename=None, callback=None):
     
     # Explicitly Chunk the documents
     if callback: callback("Chunking Documents...")
-    splitter = SentenceSplitter(chunk_size=1024, chunk_overlap=200)
+    splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
     nodes = splitter.get_nodes_from_documents(documents)
     print(f"Split {len(documents)} documents into {len(nodes)} chunks.")
     if callback: callback(f"Created {len(nodes)} granular chunks.")

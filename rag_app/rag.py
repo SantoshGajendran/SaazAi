@@ -38,12 +38,15 @@ def get_chat_engine(selected_file=None):
     
     if _embed_model is None:
         _embed_model = HuggingFaceEmbedding(model_name="all-MiniLM-L6-v2")
-        Settings.embed_model = _embed_model
+    # Always ensure Settings are applied (in case ingest.py cleared them)
+    Settings.embed_model = _embed_model
 
     if _llm is None:
         # Using 127.0.0.1 to avoid localhost IPv6 resolution issues
         _llm = Ollama(model="gpt-oss:120b-cloud", base_url="http://127.0.0.1:11434", request_timeout=300.0)
-        Settings.llm = _llm
+    
+    # Always ensure Settings are applied
+    Settings.llm = _llm
 
     # 2. Access Collection (Dynamic)
     chroma_collection = _db_client.get_or_create_collection("rag_collection")
@@ -58,12 +61,14 @@ def get_chat_engine(selected_file=None):
     # 4. Create Chat Engine with System Prompt AND Filters
     system_prompt = (
         "You are a Technical Assistant. You will be given context that includes Markdown tables and image descriptions. "
+        "Your goal is to answer the user's question based ONLY on the provided context. "
         "1. When reading a table row, strictly associate the 'Input/Description' column with the 'Specification/Logic' column. "
         "2. Do not hallucinate values not present in the table. "
         "3. If asked for a diagram, image, or layout, DO NOT generate ASCII art or text-based representations. "
         "Instead, simply state 'Please refer to the Source Visual below.' and summarize the key technical details found in the text description."
         "4. If the user input is a greeting (e.g., 'hi', 'hello', 'good morning') or a general pleasantry, ignore the strict context requirement and respond politely and naturally."
         "5. IDENTITY: If asked about your name or what you do, state: 'My name is SazAi. I am an intelligent Technical Assistant designed to help you analyze, understand, and extract insights from your complex technical documents, schematics, and manuals.'"
+        "6. Provide direct, concise answers. Do not copy the entire context unless explicitly asked."
     )
     
     filters = None
@@ -75,7 +80,7 @@ def get_chat_engine(selected_file=None):
     chat_engine = index.as_chat_engine(
         chat_mode="context",
         system_prompt=system_prompt,
-        similarity_top_k=5, 
+        similarity_top_k=3, 
         filters=filters
     )
 
