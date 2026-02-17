@@ -4,12 +4,13 @@ from pydantic import BaseModel
 import os
 import shutil
 from typing import List
+import traceback
 
 # Import our existing backend logic
 from ingest import ingest_document, list_ingested_files, delete_ingested_file, get_storage_stats
 from rag import get_chat_engine
 
-app = FastAPI(title="SaazAi API", description="Backend for SaazAi RAG Application")
+app = FastAPI(title="SzAi API", description="Backend for SzAi RAG Application")
 
 # In-memory progress tracker: { filename: "Status Message" }
 upload_progress = {}
@@ -49,7 +50,7 @@ class ChatResponse(BaseModel):
 
 @app.get("/")
 def health_check():
-    return {"status": "ok", "message": "SaazAi API is running"}
+    return {"status": "ok", "message": "SzAi API is running"}
 
 @app.get("/documents")
 def get_documents():
@@ -204,4 +205,6 @@ async def chat_endpoint(request: ChatRequest):
         )
 
     except Exception as e:
+        print("Error in chat endpoint:")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

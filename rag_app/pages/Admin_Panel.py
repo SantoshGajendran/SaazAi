@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-st.set_page_config(page_title="SaazAi Admin", layout="wide")
+st.set_page_config(page_title="SzAi Admin", layout="wide")
 
 # --- Custom CSS for Admin Panel ---
 st.markdown("""
@@ -137,7 +137,7 @@ if not st.session_state.admin_authenticated:
             st.markdown("### Admin Login")
             st.markdown("<p style='font-size: 0.9rem; color: #64748B; margin-bottom: 1.5rem;'>Enter your admin credentials</p>", unsafe_allow_html=True)
             
-            st.text_input("Email", placeholder="admin@saazai.com (Demo)", key="email_input")
+            st.text_input("Email", placeholder="admin@szai.com (Demo)", key="email_input")
             st.text_input("Password", type="password", key="password_input")
             
             st.button("Login as Admin", on_click=check_password)

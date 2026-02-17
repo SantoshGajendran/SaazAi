@@ -9,7 +9,7 @@ from PIL import Image
 # Load environment variables
 load_dotenv()
 
-st.set_page_config(page_title="SaazAi", layout="wide")
+st.set_page_config(page_title="SzAi", layout="wide")
 
 # --- Custom CSS for Premium "SaaS" Look ---
 st.markdown("""

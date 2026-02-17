@@ -42,8 +42,33 @@ def get_chat_engine(selected_file=None):
     Settings.embed_model = _embed_model
 
     if _llm is None:
-        # Using 127.0.0.1 to avoid localhost IPv6 resolution issues
-        _llm = Ollama(model="gpt-oss:120b-cloud", base_url="http://127.0.0.1:11434", request_timeout=300.0)
+        # Load config from env
+        ollama_url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
+        ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
+        ollama_key = os.getenv("OLLAMA_API_KEY", "")
+        
+        print(f"Initializing Ollama with URL={ollama_url}, Model={ollama_model}")
+        
+        # Prepare kwargs
+        llm_kwargs = {
+            "model": ollama_model,
+            "base_url": ollama_url,
+            "request_timeout": 300.0
+        }
+        
+        # Add auth header if key is present
+        if ollama_key:
+            llm_kwargs["additional_kwargs"] = {
+                "headers": {
+                    "Authorization": f"Bearer {ollama_key}"
+                }
+            }
+            # Some versions of llama-index might use different param names, 
+            # but usually the client underlying it accepts headers. 
+            # If "additional_kwargs" fails, we might need to check 'headers' param directly.
+            # LlamaIndex Ollama class often passes **kwargs to the client.
+        
+        _llm = Ollama(**llm_kwargs)
     
     # Always ensure Settings are applied
     Settings.llm = _llm
@@ -77,11 +102,23 @@ def get_chat_engine(selected_file=None):
             filters=[ExactMatchFilter(key="file_name", value=selected_file)]
         )
 
-    chat_engine = index.as_chat_engine(
-        chat_mode="context",
-        system_prompt=system_prompt,
-        similarity_top_k=3, 
-        filters=filters
-    )
+    try:
+        # Check if model exists by attempting to get metadata (lightweight check)
+        # This prevents the hard crash deep inside llama-index
+        # Note: We let index.as_chat_engine do the heavy lifting, but we wrap it.
+        chat_engine = index.as_chat_engine(
+            chat_mode="context",
+            system_prompt=system_prompt,
+            similarity_top_k=3, 
+            filters=filters
+        )
+    except Exception as e:
+        if "not found" in str(e) or "404" in str(e):
+             # Make the error very extremely clear
+             raise ValueError(
+                 f"CRITICAL ERROR: The model '{_llm.model}' was not found at '{_llm.base_url}'. "
+                 f"Please run `ollama pull {_llm.model}` in your terminal."
+             )
+        raise e
 
     return chat_engine
