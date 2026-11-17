@@ -11,6 +11,7 @@ rag_app/__pycache__/
 rag_app/data/*
 !rag_app/data/.gitkeep
 rag_app/chroma_db/
+chroma_db/
 rag_app/.env
 
 # Angular
