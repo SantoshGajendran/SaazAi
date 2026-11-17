@@ -1,0 +1,85 @@
+<div class="chat-container">
+    <!-- Top Banner -->
+    <div class="top-banner" *ngIf="selectedFile">
+        <div class="banner-icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D32F2F" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+        </div>
+        <h3>{{ selectedFile }}</h3>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!selectedFile">
+        <div class="empty-card">
+            <div class="empty-icon">📂</div>
+            <h2>Select a Document</h2>
+            <p>Choose a PDF from the sidebar to start asking questions.</p>
+        </div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="messages-area" #scrollContainer *ngIf="selectedFile">
+        <div class="message-wrapper" *ngFor="let msg of messages" [class.user]="msg.role === 'user'">
+
+            <!-- Avatar -->
+            <div class="avatar">
+                {{ msg.role === 'user' ? '👤' : '🤖' }}
+            </div>
+
+            <!-- Content -->
+            <div class="message-content">
+                <!-- Text -->
+                <!-- Text -->
+                <markdown [data]="msg.content" class="text-body"></markdown>
+
+                <!-- Image Context -->
+                <div class="visual-context" *ngIf="msg.image">
+                    <div class="visual-header" (click)="msg.expandedImage = !msg.expandedImage"
+                        [class.expanded]="msg.expandedImage">
+                        <span class="citation-toggle-icon">▶</span>
+                        🖼️ Visual Context
+                    </div>
+                    <div class="visual-content" *ngIf="msg.expandedImage">
+                        <img [src]="msg.image" alt="Source Page">
+                    </div>
+                </div>
+
+                <!-- Citations -->
+                <div class="citations-container" *ngIf="msg.citations && msg.citations.length > 0">
+                    <div class="citation-header" (click)="msg.expandedSources = !msg.expandedSources"
+                        [class.expanded]="msg.expandedSources">
+                        <span class="citation-toggle-icon">▶</span>
+                        📚 Sources ({{ msg.citations.length }})
+                    </div>
+
+                    <div class="citation-list" *ngIf="msg.expandedSources">
+                        <div *ngFor="let cite of msg.citations" class="citation-item">
+                            {{ cite }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div class="message-wrapper" *ngIf="isLoading">
+            <div class="avatar">🤖</div>
+            <div class="message-content loading">
+                <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area" *ngIf="selectedFile">
+        <div class="input-pill">
+            <input type="text" [(ngModel)]="userInput" (keyup.enter)="sendMessage()"
+                placeholder="Ask about this document..." [disabled]="isLoading">
+            <button (click)="sendMessage()" [disabled]="isLoading || !userInput.trim()">
+                ➤
+            </button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,31 @@
+<div class="sidebar-container">
+    <!-- Header -->
+    <div class="sidebar-header">
+        <div class="header-title">Documents</div>
+        <div class="header-subtitle">Select a PDF to ask questions</div>
+    </div>
+
+    <!-- Document List -->
+    <div class="document-list">
+        <button *ngFor="let doc of documents" 
+                class="nav-btn" 
+                [class.active]="selectedFile === doc"
+                (click)="selectFile(doc)">
+            📄 {{ doc }}
+        </button>
+        
+        <div *ngIf="documents.length === 0" class="empty-msg">
+            No documents found.
+        </div>
+    </div>
+
+    <!-- Spacer -->
+    <div class="spacer"></div>
+
+    <!-- Admin Footer -->
+    <div class="admin-footer">
+        <button class="admin-btn" (click)="onAdmin()">
+            🔒 Admin Login
+        </button>
+    </div>
+</div>

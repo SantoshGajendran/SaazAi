@@ -1,0 +1,15 @@
+<div class="modal-overlay">
+    <div class="modal-content">
+        <div class="trash-icon">
+            🗑️
+        </div>
+        <h2>Delete Document?</h2>
+        <p>Are you sure you want to permanently delete <br><strong>{{ fileName }}</strong>?</p>
+        <p class="warning-text">This action cannot be undone.</p>
+
+        <div class="modal-actions">
+            <button class="cancel-btn" (click)="cancel()">Cancel</button>
+            <button class="delete-btn" (click)="confirm()">Delete</button>
+        </div>
+    </div>
+</div>

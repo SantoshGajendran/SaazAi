@@ -1,0 +1,11 @@
+<div class="app-layout" *ngIf="!isAdminRoute()">
+    <app-sidebar (fileSelected)="onFileSelected($event)" (adminClicked)="onAdminClick()"></app-sidebar>
+    <main class="main-content">
+        <router-outlet></router-outlet>
+    </main>
+</div>
+
+<!-- Admin Route (Full Screen) -->
+<div *ngIf="isAdminRoute()">
+    <router-outlet></router-outlet>
+</div>

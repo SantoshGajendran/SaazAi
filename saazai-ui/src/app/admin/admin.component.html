@@ -1,0 +1,98 @@
+<div class="admin-container">
+
+    <!-- Success Modal -->
+    <app-success-modal *ngIf="showSuccessModal" (onClose)="showSuccessModal = false"></app-success-modal>
+
+    <!-- Delete Modal -->
+    <app-delete-modal *ngIf="showDeleteModal" [fileName]="fileToDelete || ''" (onConfirm)="confirmDelete()"
+        (onCancel)="cancelDelete()">
+    </app-delete-modal>
+
+
+    <!-- LOGIN VIEW -->
+    <div class="login-view" *ngIf="!isAuthenticated">
+        <div class="login-card">
+            <div class="icon-box">🔒</div>
+            <h2>Admin Access</h2>
+            <p>Manage knowledge base</p>
+
+            <div class="form-group">
+                <input type="text" placeholder="Email (admin@szai.com)" [(ngModel)]="email">
+            </div>
+            <div class="form-group">
+                <input type="password" placeholder="Password (admin123)" [(ngModel)]="password">
+            </div>
+
+            <button class="login-btn" (click)="login()">Login as Admin</button>
+            <button class="back-btn" (click)="backToChat()">Back to Chat</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD VIEW -->
+    <div class="dashboard-view" *ngIf="isAuthenticated">
+        <div class="dashboard-header">
+            <h1>Admin Dashboard</h1>
+            <button class="logout-btn" (click)="logout()">Logout</button>
+        </div>
+
+        <div class="dashboard-content">
+            <!-- Stats Card -->
+            <div class="card stats-card">
+                <h3>📊 Knowledge Base Stats</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ storageStats.count }}</div>
+                        <div class="stat-label">Total Documents</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ storageStats.total_size }}</div>
+                        <div class="stat-label">Total Size</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Card -->
+            <div class="card upload-card">
+                <h3>📤 Upload Documents</h3>
+                <div class="upload-zone">
+                    <div class="upload-icon">☁️</div>
+                    <p>Click to select PDF, Word, or PPT files</p>
+                    <input type="file" (change)="onFileSelected($event)" accept=".pdf, .docx, .pptx, .doc, .ppt">
+                    <div *ngIf="isUploading" class="upload-progress-card">
+                        <div class="progress-header">
+                            <span class="pulse-dot"></span>
+                            PROCESSING AGENT ACTIVE
+                        </div>
+
+                        <div class="progress-bar-track">
+                            <div class="progress-bar-fill" [style.width.%]="uploadProgress"></div>
+                        </div>
+
+                        <div class="status-detail">
+                            <span class="status-icon">⚙️</span>
+                            <span class="status-text">{{ uploadStatusMessage }}</span>
+                            <span class="percentage">{{ uploadProgress }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List Card -->
+            <div class="card list-card">
+                <h3>📄 Uploaded Documents</h3>
+                <div class="doc-list">
+                    <div class="doc-item" *ngFor="let doc of documents">
+                        <div class="doc-icon">📄</div>
+                        <div class="doc-info">
+                            <div class="doc-name">{{ doc }}</div>
+                            <div class="doc-meta">Ready for RAG</div>
+                        </div>
+                        <button class="del-btn" (click)="delete(doc)">🗑️</button>
+                    </div>
+                    <div *ngIf="documents.length === 0" class="empty-list">No documents (yet).</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
