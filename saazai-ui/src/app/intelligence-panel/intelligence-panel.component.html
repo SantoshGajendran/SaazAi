@@ -1,0 +1,40 @@
+<div class="intelligence-wrapper">
+    <!-- Messages Scroll Area -->
+    <div class="messages-container">
+        <div *ngIf="messages.length === 0" class="empty-state">
+            <span class="prompt-icon">⚡</span>
+            <h3>Technical Notebook</h3>
+            <p>Query specifications, tolerances, or diagrams from {{ activeFile || 'the active manual' }}.</p>
+        </div>
+
+        <div *ngFor="let msg of messages" class="message-block" [class.user]="msg.role === 'user'">
+            <div class="meta-label">
+                {{ msg.role === 'user' ? 'OPERATOR' : 'SAAZAI INTELLIGENCE' }}
+            </div>
+            <div class="message-body">
+                <markdown [data]="msg.content"></markdown>
+            </div>
+
+            <!-- Citations Row -->
+            <div class="citations-row" *ngIf="msg.citations && msg.citations.length > 0">
+                <button *ngFor="let cite of msg.citations" class="citation-chip" (click)="onCitationClick(cite)">
+                    📌 Page {{ cite.page }} <span class="score">({{ (cite.score * 100) | number:'1.0-0' }}%)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Bar -->
+    <div class="input-container">
+        <input 
+            type="text" 
+            [(ngModel)]="userInput" 
+            (keyup.enter)="submitQuery()"
+            placeholder="Inquire specifications, diagrams, components..." 
+            [disabled]="isStreaming || !activeFile"
+        />
+        <button class="send-btn" (click)="submitQuery()" [disabled]="isStreaming || !userInput.trim()">
+            {{ isStreaming ? '◼' : '➤' }}
+        </button>
+    </div>
+</div>

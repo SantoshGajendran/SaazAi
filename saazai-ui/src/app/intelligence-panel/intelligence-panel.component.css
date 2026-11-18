@@ -1,0 +1,148 @@
+.intelligence-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: #0b0f17;
+    color: #e6edf3;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    height: 100%;
+    min-height: 250px;
+    color: #8b949e;
+    padding: 2rem;
+}
+
+.empty-state .prompt-icon {
+    font-size: 2.2rem;
+    margin-bottom: 0.75rem;
+    color: #ef4444;
+}
+
+.empty-state h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #f0f6fc;
+    margin: 0 0 0.5rem 0;
+}
+
+.empty-state p {
+    font-size: 0.88rem;
+    color: #8b949e;
+    margin: 0;
+    max-width: 320px;
+    line-height: 1.5;
+}
+
+.message-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-width: 90%;
+}
+
+.message-block.user {
+    align-self: flex-end;
+}
+
+.meta-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    color: #8b949e;
+}
+
+.message-body {
+    background-color: #161d2a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    line-height: 1.6;
+}
+
+.message-block.user .message-body {
+    background-color: #1f293d;
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.citations-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+}
+
+.citation-chip {
+    background: #1c2433;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.citation-chip:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+}
+
+.score {
+    color: #8b949e;
+}
+
+.input-container {
+    padding: 1rem 1.5rem;
+    background-color: #121824;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    gap: 0.75rem;
+}
+
+.input-container input {
+    flex: 1;
+    background: #1a2233;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.input-container input:focus {
+    border-color: #ef4444;
+}
+
+.send-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0 1.2rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.send-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
