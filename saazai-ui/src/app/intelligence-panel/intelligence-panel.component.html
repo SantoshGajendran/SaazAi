@@ -33,7 +33,7 @@
             placeholder="Inquire specifications, diagrams, components..." 
             [disabled]="isStreaming || !activeFile"
         />
-        <button class="send-btn" (click)="submitQuery()" [disabled]="isStreaming || !userInput.trim()">
+        <button class="send-btn" (click)="isStreaming ? abortActiveStream() : submitQuery()" [disabled]="!isStreaming && !userInput.trim()">
             {{ isStreaming ? '◼' : '➤' }}
         </button>
     </div>

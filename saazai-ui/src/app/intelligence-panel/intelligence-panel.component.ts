@@ -42,6 +42,7 @@ export class IntelligencePanelComponent implements OnInit, OnDestroy {
         this.subs.add(
             this.sync.activeDocument$.subscribe(doc => {
                 if (doc !== this.activeFile) {
+                    this.abortActiveStream();
                     this.activeFile = doc;
                     this.messages = [];
                 }
@@ -83,6 +84,11 @@ export class IntelligencePanelComponent implements OnInit, OnDestroy {
                 body: JSON.stringify({ query, selected_file: this.activeFile }),
                 signal: this.abortCtrl.signal
             });
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                throw new Error(`HTTP ${res.status}: ${errorText}`);
+            }
 
             if (!res.body) throw new Error('ReadableStream not supported.');
 

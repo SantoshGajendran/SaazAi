@@ -1,0 +1,65 @@
+.workspace-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background-color: #0d1117;
+}
+
+.workspace-header {
+    height: 48px;
+    background-color: #161b22;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.25rem;
+    color: #e6edf3;
+    font-size: 0.85rem;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    letter-spacing: 0.05em;
+}
+
+.logo-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ef4444;
+}
+
+.doc-selector select {
+    background: #0b0f17;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+
+.key-chip {
+    background: #21262d;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: #8b949e;
+}
+
+.split-viewport {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 55% 45%;
+    overflow: hidden;
+}
+
+.left-pane, .right-pane {
+    height: 100%;
+    overflow: hidden;
+}

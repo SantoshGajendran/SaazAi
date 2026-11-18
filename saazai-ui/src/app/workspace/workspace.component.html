@@ -1,0 +1,28 @@
+<div class="workspace-layout">
+    <!-- Omnipresent Top Navigation Bar -->
+    <header class="workspace-header">
+        <div class="brand">
+            <span class="logo-dot"></span>
+            <strong>SAAZAI</strong> WORKSPACE
+        </div>
+        <div class="doc-selector">
+            <label>Manual:</label>
+            <select (change)="onDocumentChange($event)">
+                <option *ngFor="let doc of documents" [value]="doc">{{ doc }}</option>
+            </select>
+        </div>
+        <div class="action-shortcuts">
+            <span class="key-chip">⌘K</span>
+        </div>
+    </header>
+
+    <!-- Dual Pane Split Grid -->
+    <main class="split-viewport">
+        <section class="left-pane">
+            <app-pdf-canvas></app-pdf-canvas>
+        </section>
+        <section class="right-pane">
+            <app-intelligence-panel></app-intelligence-panel>
+        </section>
+    </main>
+</div>
