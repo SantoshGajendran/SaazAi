@@ -7,7 +7,7 @@
         </div>
         <div class="doc-selector">
             <label>Manual:</label>
-            <select (change)="onDocumentChange($event)">
+            <select [value]="sync.activeDocument$ | async" (change)="onDocumentChange($event)">
                 <option *ngFor="let doc of documents" [value]="doc">{{ doc }}</option>
             </select>
         </div>

@@ -21,10 +21,15 @@ export class WorkspaceComponent implements OnInit {
     ) {}
 
     ngOnInit(): void {
-        this.api.getDocuments().subscribe(res => {
-            this.documents = res.documents;
-            if (this.documents.length > 0) {
-                this.sync.setActiveDocument(this.documents[0]);
+        this.api.getDocuments().subscribe({
+            next: (res) => {
+                this.documents = res.documents || [];
+                if (this.documents.length > 0) {
+                    this.sync.setActiveDocument(this.documents[0]);
+                }
+            },
+            error: (err) => {
+                console.error('Failed to load documents:', err);
             }
         });
     }
