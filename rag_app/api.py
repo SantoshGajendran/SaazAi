@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
@@ -114,6 +115,26 @@ def delete_document(filename: str):
             raise HTTPException(status_code=404, detail="File not found or failed to delete")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/documents/{filename}/raw")
+def get_raw_document(filename: str):
+    """Streams raw PDF binary file with HTTP Range support."""
+    clean_name = os.path.basename(filename)
+    if clean_name != filename or not clean_name:
+        raise HTTPException(status_code=400, detail="Invalid filename parameter.")
+        
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.join(base_dir, "data")
+    file_path = os.path.join(data_dir, clean_name)
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Document not found.")
+        
+    return FileResponse(
+        path=file_path,
+        media_type="application/pdf",
+        filename=clean_name
+    )
 
 # --- Additional Imports ---
 import base64
