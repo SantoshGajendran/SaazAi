@@ -54,21 +54,29 @@
     overflow: auto;
     display: flex;
     justify-content: center;
+    align-items: flex-start;
     padding: 1.5rem;
 }
 
-.canvas-viewport canvas {
+.page-container {
+    position: relative;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
     border-radius: 4px;
     background-color: #ffffff;
+    line-height: 0;
+}
+
+.pdf-page-canvas {
+    display: block;
+    border-radius: 4px;
 }
 
 .svg-highlight-layer {
     position: absolute;
-    top: 50px;
+    top: 0;
     left: 0;
     width: 100%;
-    height: calc(100% - 50px);
+    height: 100%;
     pointer-events: none;
 }
 

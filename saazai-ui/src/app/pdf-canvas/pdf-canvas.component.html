@@ -1,4 +1,4 @@
-<div class="pdf-canvas-wrapper">
+<div class="pdf-canvas-wrapper" (mouseup)="onCanvasMouseUp($event)">
     <!-- Top Canvas Toolbar -->
     <div class="canvas-header">
         <div class="page-indicator">
@@ -13,14 +13,19 @@
 
     <!-- Viewport Container -->
     <div class="canvas-viewport" #canvasContainer>
+        <div class="page-container" [style.width.px]="viewportWidth" [style.height.px]="viewportHeight" [style.display]="isLoading || !pdfDoc ? 'none' : 'block'">
+            <canvas #pdfCanvas class="pdf-page-canvas"></canvas>
+            <!-- Glowing Vector Overlay -->
+            <svg class="svg-highlight-layer" *ngIf="currentHighlight && currentHighlight.page === currentPage"
+                 [attr.viewBox]="'0 0 ' + viewportWidth + ' ' + viewportHeight"
+                 [style.width.px]="viewportWidth" [style.height.px]="viewportHeight">
+                <polygon [attr.points]="currentHighlight.points" class="glow-polygon" />
+            </svg>
+        </div>
+
         <div class="loading-spinner" *ngIf="isLoading">
             <div class="ring"></div>
             <span>Loading Document Canvas...</span>
         </div>
     </div>
-
-    <!-- Glowing Vector Overlay -->
-    <svg class="svg-highlight-layer" *ngIf="currentHighlight">
-        <polygon [attr.points]="currentHighlight.points" class="glow-polygon" />
-    </svg>
 </div>

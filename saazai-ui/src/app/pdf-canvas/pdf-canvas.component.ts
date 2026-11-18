@@ -4,8 +4,8 @@ import { DocumentSyncService, NavigationTarget } from '../services/document-sync
 import { Subscription } from 'rxjs';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
+// Configure worker dynamically matching installed version
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 interface HighlightPolygon {
     page: number;
@@ -21,13 +21,18 @@ interface HighlightPolygon {
 })
 export class PdfCanvasComponent implements OnInit, OnDestroy {
     @ViewChild('canvasContainer') canvasContainer!: ElementRef<HTMLDivElement>;
+    @ViewChild('pdfCanvas') pdfCanvas?: ElementRef<HTMLCanvasElement>;
 
     private subs = new Subscription();
+    private currentRenderTask: any = null;
+
     pdfDoc: pdfjsLib.PDFDocumentProxy | null = null;
     totalPages = 0;
     currentPage = 1;
     zoomLevel = 1.0;
     isLoading = false;
+    viewportWidth = 0;
+    viewportHeight = 0;
     currentHighlight: HighlightPolygon | null = null;
 
     constructor(
@@ -58,59 +63,142 @@ export class PdfCanvasComponent implements OnInit, OnDestroy {
 
     ngOnDestroy(): void {
         this.subs.unsubscribe();
+        this.cancelActiveRender();
+        if (this.pdfDoc) {
+            try {
+                this.pdfDoc.destroy();
+            } catch {
+                // ignore cleanup errors
+            }
+            this.pdfDoc = null;
+        }
+    }
+
+    private cancelActiveRender(): void {
+        if (this.currentRenderTask) {
+            try {
+                this.currentRenderTask.cancel();
+            } catch {
+                // ignore cancellation errors
+            }
+            this.currentRenderTask = null;
+        }
     }
 
     async loadDocument(filename: string): Promise<void> {
         this.isLoading = true;
+        this.currentHighlight = null;
         this.cdr.detectChanges();
+
+        this.cancelActiveRender();
+
+        if (this.pdfDoc) {
+            try {
+                await this.pdfDoc.destroy();
+            } catch (err) {
+                console.warn('Failed to destroy previous PDF document:', err);
+            }
+            this.pdfDoc = null;
+        }
+
         try {
             const url = `http://localhost:8000/documents/${encodeURIComponent(filename)}/raw`;
             const loadingTask = pdfjsLib.getDocument({ url, rangeChunkSize: 65536 });
             this.pdfDoc = await loadingTask.promise;
             this.totalPages = this.pdfDoc.numPages;
             this.currentPage = 1;
+            this.isLoading = false;
+            this.cdr.detectChanges();
             await this.renderPage(1);
         } catch (err) {
             console.error('Failed to load PDF:', err);
-        } finally {
             this.isLoading = false;
             this.cdr.detectChanges();
         }
     }
 
     async renderPage(pageNum: number): Promise<void> {
-        if (!this.pdfDoc || !this.canvasContainer) return;
-        const page = await this.pdfDoc.getPage(pageNum);
-        const viewport = page.getViewport({ scale: this.zoomLevel * 1.5 });
+        if (!this.pdfDoc) return;
 
-        const canvas = document.createElement('canvas');
-        canvas.className = 'pdf-page-canvas';
-        const ctx = canvas.getContext('2d')!;
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
+        this.cancelActiveRender();
 
-        const container = this.canvasContainer.nativeElement;
-        container.innerHTML = ''; // Clear prior render
-        container.appendChild(canvas);
+        try {
+            const page = await this.pdfDoc.getPage(pageNum);
+            const scale = this.zoomLevel * 1.5;
+            const viewport = page.getViewport({ scale });
 
-        await page.render({ canvasContext: ctx, viewport }).promise;
-        this.currentPage = pageNum;
-        this.cdr.detectChanges();
+            this.viewportWidth = viewport.width;
+            this.viewportHeight = viewport.height;
+            this.cdr.detectChanges();
+
+            if (!this.pdfCanvas) return;
+            const canvas = this.pdfCanvas.nativeElement;
+            const ctx = canvas.getContext('2d')!;
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            const renderTask = page.render({ canvasContext: ctx, viewport });
+            this.currentRenderTask = renderTask;
+
+            await renderTask.promise;
+            this.currentPage = pageNum;
+            this.cdr.detectChanges();
+        } catch (err: any) {
+            if (err?.name === 'RenderingCancelledException' || err?.message?.includes('cancelled')) {
+                // Render was cancelled gracefully
+                return;
+            }
+            console.error('Failed to render page:', err);
+        } finally {
+            this.currentRenderTask = null;
+        }
     }
 
     handleNavigation(target: NavigationTarget): void {
         if (target.page >= 1 && target.page <= this.totalPages) {
             this.renderPage(target.page).then(() => {
-                // Draw pulsating highlight indicator
+                let points: string;
+                if (target.bbox && target.bbox.length === 4) {
+                    const [x1, y1, x2, y2] = target.bbox;
+                    const scale = this.zoomLevel * 1.5;
+                    const isNormalized = x1 <= 1 && y1 <= 1 && x2 <= 1 && y2 <= 1;
+                    const sx1 = Math.round(isNormalized ? x1 * this.viewportWidth : x1 * scale);
+                    const sy1 = Math.round(isNormalized ? y1 * this.viewportHeight : y1 * scale);
+                    const sx2 = Math.round(isNormalized ? x2 * this.viewportWidth : x2 * scale);
+                    const sy2 = Math.round(isNormalized ? y2 * this.viewportHeight : y2 * scale);
+                    points = `${sx1},${sy1} ${sx2},${sy1} ${sx2},${sy2} ${sx1},${sy2}`;
+                } else {
+                    const w = this.viewportWidth || 300;
+                    const h = this.viewportHeight || 400;
+                    const x1 = Math.round(w * 0.1);
+                    const y1 = Math.round(h * 0.1);
+                    const x2 = Math.round(w * 0.9);
+                    const y2 = Math.round(h * 0.2);
+                    points = `${x1},${y1} ${x2},${y1} ${x2},${y2} ${x1},${y2}`;
+                }
+
                 this.currentHighlight = {
                     page: target.page,
-                    points: "50,50 300,50 300,100 50,100"
+                    points
                 };
                 this.cdr.detectChanges();
                 setTimeout(() => {
                     this.currentHighlight = null;
                     this.cdr.detectChanges();
                 }, 3000);
+            });
+        }
+    }
+
+    onCanvasMouseUp(event: MouseEvent): void {
+        const selection = window.getSelection();
+        const text = selection ? selection.toString().trim() : '';
+        if (text) {
+            this.sync.setSelection({
+                text,
+                page: this.currentPage,
+                clientX: event.clientX,
+                clientY: event.clientY
             });
         }
     }
