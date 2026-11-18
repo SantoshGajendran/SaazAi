@@ -1,0 +1,95 @@
+.pdf-canvas-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: #0d1117;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+.canvas-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: #161b22;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: #c9d1d9;
+    font-size: 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.tool-btn {
+    background: #21262d;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #f0f6fc;
+    width: 26px;
+    height: 26px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.tool-btn:hover {
+    background: #30363d;
+}
+
+.zoom-text {
+    min-width: 45px;
+    text-align: center;
+}
+
+.canvas-viewport {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.canvas-viewport canvas {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    background-color: #ffffff;
+}
+
+.svg-highlight-layer {
+    position: absolute;
+    top: 50px;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 50px);
+    pointer-events: none;
+}
+
+.glow-polygon {
+    fill: rgba(239, 68, 68, 0.25);
+    stroke: #ef4444;
+    stroke-width: 2;
+    filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.6));
+    animation: pulse-glow 1.5s infinite alternate ease-in-out;
+}
+
+@keyframes pulse-glow {
+    0% { opacity: 0.4; }
+    100% { opacity: 1; }
+}
+
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #8b949e;
+    gap: 1rem;
+}

@@ -1,0 +1,26 @@
+<div class="pdf-canvas-wrapper">
+    <!-- Top Canvas Toolbar -->
+    <div class="canvas-header">
+        <div class="page-indicator">
+            Page {{ currentPage }} of {{ totalPages || 1 }}
+        </div>
+        <div class="zoom-controls">
+            <button class="tool-btn" (click)="sync.zoomOut()" title="Zoom Out">−</button>
+            <span class="zoom-text">{{ (zoomLevel * 100) | number:'1.0-0' }}%</span>
+            <button class="tool-btn" (click)="sync.zoomIn()" title="Zoom In">+</button>
+        </div>
+    </div>
+
+    <!-- Viewport Container -->
+    <div class="canvas-viewport" #canvasContainer>
+        <div class="loading-spinner" *ngIf="isLoading">
+            <div class="ring"></div>
+            <span>Loading Document Canvas...</span>
+        </div>
+    </div>
+
+    <!-- Glowing Vector Overlay -->
+    <svg class="svg-highlight-layer" *ngIf="currentHighlight">
+        <polygon [attr.points]="currentHighlight.points" class="glow-polygon" />
+    </svg>
+</div>
