@@ -1,9 +1,11 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 import shutil
+import json
+import asyncio
 from typing import List
 import traceback
 
@@ -229,3 +231,57 @@ async def chat_endpoint(request: ChatRequest):
         print("Error in chat endpoint:")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/chat/stream")
+async def chat_stream_endpoint(request: ChatRequest):
+    if not request.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+        
+    chat_engine = get_chat_engine(selected_file=request.selected_file)
+    if not chat_engine:
+        raise HTTPException(status_code=400, detail="Chat engine not initialized.")
+
+    async def event_generator():
+        try:
+            # Execute streaming chat
+            response_stream = chat_engine.stream_chat(request.query)
+            
+            # 1. Stream tokens as they generate
+            for token in response_stream.response_gen:
+                payload = json.dumps({"delta": token})
+                yield f"event: token\ndata: {payload}\n\n"
+                await asyncio.sleep(0.01) # Yield to event loop
+            
+            # 2. Emit citations from source nodes
+            if hasattr(response_stream, "source_nodes") and response_stream.source_nodes:
+                for node in response_stream.source_nodes:
+                    fn = node.metadata.get("file_name", request.selected_file)
+                    pg = node.metadata.get("page_label", "1")
+                    score = float(node.score) if node.score else 0.0
+                    snippet = node.get_text()[:120].strip()
+                    cite_payload = json.dumps({
+                        "file": fn,
+                        "page": int(pg) if str(pg).isdigit() else 1,
+                        "anchor": snippet,
+                        "score": round(score, 3)
+                    })
+                    yield f"event: citation\ndata: {cite_payload}\n\n"
+
+            # 3. Emit termination event
+            yield f"event: done\ndata: {{}}\n\n"
+
+        except Exception as e:
+            err_payload = json.dumps({"message": str(e)})
+            yield f"event: error\ndata: {err_payload}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
