@@ -1,6 +1,6 @@
 <div class="intelligence-wrapper">
     <!-- Messages Scroll Area -->
-    <div class="messages-container">
+    <div class="messages-container" #messagesContainer>
         <div *ngIf="messages.length === 0" class="empty-state">
             <span class="prompt-icon">⚡</span>
             <h3>Technical Notebook</h3>
@@ -33,7 +33,7 @@
             placeholder="Inquire specifications, diagrams, components..." 
             [disabled]="isStreaming || !activeFile"
         />
-        <button class="send-btn" (click)="isStreaming ? abortActiveStream() : submitQuery()" [disabled]="!isStreaming && !userInput.trim()">
+        <button class="send-btn" (click)="isStreaming ? abortActiveStream() : submitQuery()" [disabled]="!isStreaming && (!userInput.trim() || !activeFile)">
             {{ isStreaming ? '◼' : '➤' }}
         </button>
     </div>

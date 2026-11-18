@@ -9,7 +9,7 @@ from api import app
 
 client = TestClient(app)
 
-def test_get_raw_document_success(tmp_path):
+def test_get_raw_document_success():
     data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
     os.makedirs(data_dir, exist_ok=True)
     sample_file = os.path.join(data_dir, "test_manual.pdf")
@@ -25,7 +25,7 @@ def test_get_raw_document_success(tmp_path):
         if os.path.exists(sample_file):
             os.remove(sample_file)
 
-def test_get_raw_document_range_request(tmp_path):
+def test_get_raw_document_range_request():
     data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
     os.makedirs(data_dir, exist_ok=True)
     sample_file = os.path.join(data_dir, "test_range.pdf")

@@ -1,8 +1,9 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MarkdownModule } from 'ngx-markdown';
 import { DocumentSyncService } from '../services/document-sync.service';
+import { ApiService } from '../api.service';
 import { Subscription } from 'rxjs';
 
 export interface Citation {
@@ -26,6 +27,8 @@ export interface MessageItem {
     styleUrl: './intelligence-panel.component.css'
 })
 export class IntelligencePanelComponent implements OnInit, OnDestroy {
+    @ViewChild('messagesContainer') private messagesContainer?: ElementRef<HTMLDivElement>;
+
     messages: MessageItem[] = [];
     userInput = '';
     isStreaming = false;
@@ -35,6 +38,7 @@ export class IntelligencePanelComponent implements OnInit, OnDestroy {
 
     constructor(
         public sync: DocumentSyncService,
+        private api: ApiService,
         private cdr: ChangeDetectorRef
     ) {}
 
@@ -63,6 +67,15 @@ export class IntelligencePanelComponent implements OnInit, OnDestroy {
         this.isStreaming = false;
     }
 
+    private scrollToBottom(): void {
+        setTimeout(() => {
+            if (this.messagesContainer?.nativeElement) {
+                const el = this.messagesContainer.nativeElement;
+                el.scrollTop = el.scrollHeight;
+            }
+        }, 0);
+    }
+
     async submitQuery(): Promise<void> {
         const query = this.userInput.trim();
         if (!query || !this.activeFile || this.isStreaming) return;
@@ -74,11 +87,12 @@ export class IntelligencePanelComponent implements OnInit, OnDestroy {
         this.messages.push(assistantMsg);
         this.isStreaming = true;
         this.cdr.detectChanges();
+        this.scrollToBottom();
 
         this.abortCtrl = new AbortController();
 
         try {
-            const res = await fetch('http://localhost:8000/chat/stream', {
+            const res = await fetch(`${this.api.apiUrl}/chat/stream`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query, selected_file: this.activeFile }),
@@ -113,6 +127,7 @@ export class IntelligencePanelComponent implements OnInit, OnDestroy {
                             if (data && data.delta !== undefined) {
                                 assistantMsg.content += data.delta;
                                 this.cdr.detectChanges();
+                                this.scrollToBottom();
                             }
                         } catch (e) {
                             console.error('Failed to parse token SSE payload:', jsonStr, e);
@@ -124,6 +139,7 @@ export class IntelligencePanelComponent implements OnInit, OnDestroy {
                             if (!assistantMsg.citations) assistantMsg.citations = [];
                             assistantMsg.citations.push(cite);
                             this.cdr.detectChanges();
+                            this.scrollToBottom();
                         } catch (e) {
                             console.error('Failed to parse citation SSE payload:', jsonStr, e);
                         }
@@ -133,6 +149,7 @@ export class IntelligencePanelComponent implements OnInit, OnDestroy {
                             const err = JSON.parse(jsonStr);
                             assistantMsg.content += `\n\n*[Error: ${err.message}]*`;
                             this.cdr.detectChanges();
+                            this.scrollToBottom();
                         } catch (e) {
                             console.error('Failed to parse error SSE payload:', jsonStr, e);
                         }
@@ -142,6 +159,7 @@ export class IntelligencePanelComponent implements OnInit, OnDestroy {
         } catch (err: any) {
             if (err.name !== 'AbortError') {
                 assistantMsg.content += `\n\n*[Connection interrupted: ${err.message}]*`;
+                this.scrollToBottom();
             }
         } finally {
             this.isStreaming = false;

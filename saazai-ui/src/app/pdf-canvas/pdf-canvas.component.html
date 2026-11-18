@@ -2,7 +2,9 @@
     <!-- Top Canvas Toolbar -->
     <div class="canvas-header">
         <div class="page-indicator">
-            Page {{ currentPage }} of {{ totalPages || 1 }}
+            <button class="nav-btn" (click)="prevPage()" [disabled]="currentPage <= 1" title="Previous Page">◀</button>
+            <span>Page {{ currentPage }} of {{ totalPages || 1 }}</span>
+            <button class="nav-btn" (click)="nextPage()" [disabled]="currentPage >= totalPages" title="Next Page">▶</button>
         </div>
         <div class="zoom-controls">
             <button class="tool-btn" (click)="sync.zoomOut()" title="Zoom Out">−</button>
@@ -15,6 +17,7 @@
     <div class="canvas-viewport" #canvasContainer>
         <div class="page-container" [style.width.px]="viewportWidth" [style.height.px]="viewportHeight" [style.display]="isLoading || !pdfDoc ? 'none' : 'block'">
             <canvas #pdfCanvas class="pdf-page-canvas"></canvas>
+            <div #textLayer class="text-layer" [style.width.px]="viewportWidth" [style.height.px]="viewportHeight"></div>
             <!-- Glowing Vector Overlay -->
             <svg class="svg-highlight-layer" *ngIf="currentHighlight && currentHighlight.page === currentPage"
                  [attr.viewBox]="'0 0 ' + viewportWidth + ' ' + viewportHeight"

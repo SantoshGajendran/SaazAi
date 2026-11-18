@@ -1,6 +1,7 @@
 import { Component, ElementRef, OnInit, OnDestroy, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DocumentSyncService, NavigationTarget } from '../services/document-sync.service';
+import { ApiService } from '../api.service';
 import { Subscription } from 'rxjs';
 import * as pdfjsLib from 'pdfjs-dist';
 
@@ -22,9 +23,11 @@ interface HighlightPolygon {
 export class PdfCanvasComponent implements OnInit, OnDestroy {
     @ViewChild('canvasContainer') canvasContainer!: ElementRef<HTMLDivElement>;
     @ViewChild('pdfCanvas') pdfCanvas?: ElementRef<HTMLCanvasElement>;
+    @ViewChild('textLayer') textLayerRef?: ElementRef<HTMLDivElement>;
 
     private subs = new Subscription();
     private currentRenderTask: any = null;
+    private activeLoadingTask: any = null;
 
     pdfDoc: pdfjsLib.PDFDocumentProxy | null = null;
     totalPages = 0;
@@ -37,6 +40,7 @@ export class PdfCanvasComponent implements OnInit, OnDestroy {
 
     constructor(
         public sync: DocumentSyncService,
+        private api: ApiService,
         private cdr: ChangeDetectorRef
     ) {}
 
@@ -63,6 +67,7 @@ export class PdfCanvasComponent implements OnInit, OnDestroy {
 
     ngOnDestroy(): void {
         this.subs.unsubscribe();
+        this.cancelActiveLoadingTask();
         this.cancelActiveRender();
         if (this.pdfDoc) {
             try {
@@ -71,6 +76,17 @@ export class PdfCanvasComponent implements OnInit, OnDestroy {
                 // ignore cleanup errors
             }
             this.pdfDoc = null;
+        }
+    }
+
+    private cancelActiveLoadingTask(): void {
+        if (this.activeLoadingTask) {
+            try {
+                this.activeLoadingTask.destroy();
+            } catch {
+                // ignore loading task cancellation error
+            }
+            this.activeLoadingTask = null;
         }
     }
 
@@ -90,6 +106,7 @@ export class PdfCanvasComponent implements OnInit, OnDestroy {
         this.currentHighlight = null;
         this.cdr.detectChanges();
 
+        this.cancelActiveLoadingTask();
         this.cancelActiveRender();
 
         if (this.pdfDoc) {
@@ -102,18 +119,33 @@ export class PdfCanvasComponent implements OnInit, OnDestroy {
         }
 
         try {
-            const url = `http://localhost:8000/documents/${encodeURIComponent(filename)}/raw`;
+            const url = `${this.api.apiUrl}/documents/${encodeURIComponent(filename)}/raw`;
             const loadingTask = pdfjsLib.getDocument({ url, rangeChunkSize: 65536 });
+            this.activeLoadingTask = loadingTask;
             this.pdfDoc = await loadingTask.promise;
+            this.activeLoadingTask = null;
             this.totalPages = this.pdfDoc.numPages;
             this.currentPage = 1;
             this.isLoading = false;
             this.cdr.detectChanges();
             await this.renderPage(1);
         } catch (err) {
+            this.activeLoadingTask = null;
             console.error('Failed to load PDF:', err);
             this.isLoading = false;
             this.cdr.detectChanges();
+        }
+    }
+
+    prevPage(): void {
+        if (this.currentPage > 1) {
+            this.renderPage(this.currentPage - 1);
+        }
+    }
+
+    nextPage(): void {
+        if (this.currentPage < this.totalPages) {
+            this.renderPage(this.currentPage + 1);
         }
     }
 
@@ -142,6 +174,35 @@ export class PdfCanvasComponent implements OnInit, OnDestroy {
 
             await renderTask.promise;
             this.currentPage = pageNum;
+
+            if (this.textLayerRef?.nativeElement) {
+                const textLayerDiv = this.textLayerRef.nativeElement;
+                textLayerDiv.innerHTML = '';
+                textLayerDiv.style.width = `${viewport.width}px`;
+                textLayerDiv.style.height = `${viewport.height}px`;
+
+                try {
+                    const textContent = await page.getTextContent();
+                    const pdfAny = pdfjsLib as any;
+                    if (typeof pdfAny['renderTextLayer'] === 'function') {
+                        await pdfAny['renderTextLayer']({
+                            textContentSource: textContent,
+                            container: textLayerDiv,
+                            viewport: viewport
+                        }).promise;
+                    } else if (pdfAny['TextLayer']) {
+                        const textLayer = new pdfAny['TextLayer']({
+                            textContentSource: textContent,
+                            container: textLayerDiv,
+                            viewport: viewport
+                        });
+                        await textLayer.render();
+                    }
+                } catch (textErr: any) {
+                    console.warn('Failed to render text layer:', textErr);
+                }
+            }
+
             this.cdr.detectChanges();
         } catch (err: any) {
             if (err?.name === 'RenderingCancelledException' || err?.message?.includes('cancelled')) {

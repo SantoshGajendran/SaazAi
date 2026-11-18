@@ -121,6 +121,9 @@ def delete_document(filename: str):
 @app.get("/documents/{filename}/raw")
 def get_raw_document(filename: str):
     """Streams raw PDF binary file with HTTP Range support."""
+    if not filename or "/" in filename or "\\" in filename or ".." in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename parameter.")
+        
     clean_name = os.path.basename(filename)
     if clean_name != filename or not clean_name:
         raise HTTPException(status_code=400, detail="Invalid filename parameter.")
@@ -129,7 +132,7 @@ def get_raw_document(filename: str):
     data_dir = os.path.join(base_dir, "data")
     file_path = os.path.join(data_dir, clean_name)
     
-    if not os.path.exists(file_path):
+    if not os.path.isfile(file_path):
         raise HTTPException(status_code=404, detail="Document not found.")
         
     return FileResponse(

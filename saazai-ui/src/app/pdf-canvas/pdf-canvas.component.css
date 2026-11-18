@@ -20,6 +20,36 @@
     font-family: 'JetBrains Mono', monospace;
 }
 
+.page-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-btn {
+    background: #21262d;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #f0f6fc;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    transition: background 0.15s ease;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background: #30363d;
+}
+
+.nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
 .zoom-controls {
     display: flex;
     align-items: center;
@@ -69,6 +99,36 @@
 .pdf-page-canvas {
     display: block;
     border-radius: 4px;
+}
+
+.text-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    opacity: 1;
+    line-height: 1;
+    text-size-adjust: none;
+    forced-color-adjust: none;
+    transform-origin: 0 0;
+    z-index: 2;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+.text-layer :where(span, br) {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+}
+
+.text-layer ::selection {
+    background: rgba(239, 68, 68, 0.35);
+    color: transparent;
 }
 
 .svg-highlight-layer {
